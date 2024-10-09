@@ -48,36 +48,41 @@ public class TrinketsCompat {
         if (!enabled) {
             return Collections.emptyList();
         }
-
+    
         var component = TrinketsApi.getTrinketComponent(player);
-
+    
         if (component.isEmpty() || proxyContainer == null || !proxyContainer.is_proxy) {
             return Collections.emptyList();
         }
-
+    
         var trinketComponent = component.get();
         var allowedContent = proxyContainer.content;
         var items = new LinkedHashSet<ItemStack>();
-        var spellBookSlot = trinketComponent.getInventory().get("charm").get("spell_book");
-
-        // Add the spell book slot first
-        items.add(spellBookSlot.getStack(0));
-
+    
+        // Ensure the "charm" and "spell_book" slots exist before accessing them
+        var charmInventory = trinketComponent.getInventory().get("charm");
+        if (charmInventory != null && charmInventory.containsKey("spell_book")) {
+            var spellBookSlot = charmInventory.get("spell_book");
+            if (spellBookSlot != null) {
+                items.add(spellBookSlot.getStack(0));
+            }
+        }
+    
         // Add all other equipped items
         trinketComponent.getAllEquipped().forEach(pair -> items.add(pair.getRight()));
-
+    
         // Extract spell IDs from the containers
         // Using LinkedHashSet to preserve order and remove duplicates
         var collectedSpellIds = new LinkedHashSet<>(proxyContainer.spell_ids);
         for (ItemStack stack : items) {
             if (stack.isEmpty()) continue;
-
+    
             var container = SpellContainerHelper.containerFromItemStack(stack);
             if (container != null && container.isValid() && container.content == allowedContent) {
                 collectedSpellIds.addAll(container.spell_ids);
             }
         }
-
+    
         return new ArrayList<>(collectedSpellIds);
     }
 
